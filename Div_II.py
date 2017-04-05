@@ -6,8 +6,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy import genfromtxt
 
+# Define all functions
+# Get index
+# help from MATLAB to py https://docs.scipy.org/doc/numpy-dev/user/numpy-for-matlab-users.html
+def findval(arr, val, col):
+    # Get smallest difference between array and val
+    val_idx = (np.abs(arr[:, col] - val)).argmin()
+
+    # add check for roundup
+    if val >= arr[val_idx,col]:
+        val_idx += 1
+
+    return val_idx
+
+# 1D interpolation equation
+def interpol_xy (x, x1, x2, y1, y2):
+    y = (x-x1)*((y2-y1)/(x2-x1))+y1
+    return y
+
 # Define all parameters
-D = 28                      # diameter
+D_o = 28                      # diameter
 d_tether = 15.2/25.4        # tether diameter 15.2mm to [in]
 L_tether = (370*1000)/25.4  # tether length overall 370m to [in]
 P = 224.809*51.264          # force P of 51.264 kN [lbs]
@@ -17,49 +35,75 @@ E_y = 2.9*10**7             # Youngs modulus 200 [GPa]
 v = 0.3                     # poissons ratio [ul]
 rho = 0.284                 # density of steel [lb/in^3]
 SG = 1.01                   # spool gap 1% [ul]
-t_0 = 0.5                   # initial thickness guess
+t_0 = 1/2                  # initial thickness guess
 
 # Calculated initial parameters
 S_allow = S_y/SF
-l = np.ceil((SG * d_tether * L_tether) / (np.pi * (2 * D + 3 * d_tether)))
-q = (2*P)/(D*d_tether)
+L = np.ceil((SG * d_tether * L_tether) / (np.pi * (2 * D_o + 3 * d_tether)))
+p_req = (2*P)/(D_o * d_tether)
 
 # Create arrays for imported csv data of ASME Div II, Part
-# Figure G, to find A
-FigG = genfromtxt('csv/IID_FigG.csv', delimiter=',')
-# CS2 for S_y > 30 ksi, T<=300 def F
-CS2 = genfromtxt('csv/IID_CS2_300F.csv', delimiter=',')
+FigG = genfromtxt('csv/IID_FigG.csv', delimiter=',')            # Figure G, to find A
+CS2 = genfromtxt('csv/IID_CS2_300F.csv', delimiter=',')         # CS2 for S_y > 30 ksi, T<=300 def F
 
-# Get index
-# help from MATLAB to py https://docs.scipy.org/doc/numpy-dev/user/numpy-for-matlab-users.html
-def findval(arr, val, col):
-    # Get smallest difference between array and val
-    val_idx = (np.abs(arr[:, col] - val)).argmin()
+# Initialize loop
+p_a = 0
+t = t_0
+itnum = 1
+maxit = 10
+t_step = 1/8
 
-    # add check for roundup
-    if val >= arr[val_idx,col]:
-        val_idx=val_idx+1
+while p_a < p_req:
 
-    return val_idx
+    if itnum !=1:
+        t += t_step
 
-def interpol_xy (x, x1, x2, y1, y2):
-    y = (x-x1)*((y2-y1)/(x2-x1))+y1
-    return y
+    # calc D_0/t ratio for first guess
+    Dot = D_o/t
+    LDo = L / D_o
 
-A = 0.002
+    # Check for chart applicable aspect ratios
+    if Dot >= 4:
+        # Check for extreme LDo cases
+        if LDo > 50:
+            LDo = 50
+        # else if statement
+        elif LDo < 0.05:
+            LDo =0.05
+        else:
 
-ib = findval(CS2, A, 0)
+            # do stuff to find A from (1)
+            print('Method 1 used for A calc')
+            A = 0.002
 
-print(ib)
+    else:
+        print('Method 2 used for A calc')
+        A = 1.1/ (Dot**2)
 
-A_i1 = CS2[ib - 1, 0]
-A_i2 = CS2[ib, 0]
-B_i1 = CS2[ib - 1, 1]
-B_i2 = CS2[ib, 1]
+    # Get nearest value in CS2 table
+    ib = findval(CS2, A, 0)
+    print(ib)
 
-B = interpol_xy(A, A_i1, A_i2, B_i1, B_i2)
-print(B)
+    # Interpolate to find B
+    A_i1 = CS2[ib - 1, 0]
+    A_i2 = CS2[ib, 0]
+    B_i1 = CS2[ib - 1, 1]
+    B_i2 = CS2[ib, 1]
+    B = interpol_xy(A, A_i1, A_i2, B_i1, B_i2)
+    print(B)
 
+    # for now assume Dot >4
+    # Calculate allowable pressure
+    p_a = (4*B)/(3*Dot)
 
+    # equivalent to c++'s i++, inc itnum to avoid infinite loop
+    itnum += 1
+    if itnum >= maxit:
+        print('Did not find solution after %i iterations' %(itnum))
+        break
 
+print('A thickness of %.3f in will be safe' %(t))
 
+# Array export
+# Q_Exp = np.asarray([x_0, q])
+# np.savetxt('Data\DistLoadCap.csv', np.transpose(Q_Exp), delimiter=",")
