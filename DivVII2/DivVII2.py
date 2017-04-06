@@ -1,6 +1,9 @@
 # Sebastien Blanchet, Altaeros Energies, Systems Engineering Intern
 # Note: all calculations to be completed in US customary
 
+
+# Iterative calcultion of thickness as per ASME Sec. VII Div 2
+
 # Import relevant modules
 import sys
 from datetime import datetime
@@ -19,71 +22,23 @@ print(datetime.now().strftime('%Y/%m/%d %H:%M:%S'))
 print()
 
 # Define all functions
-# Use bilinear interpolation equation get A array
-def getA( mtrx, arr_dt, dt, arr_ld, ld):
+# Get FS as per 4.4.2
+def getFS(fic, sy):
 
-    x2 = (np.abs(arr_dt - dt)).argmin()
-    y2 = (np.abs(arr_ld - ld)).argmin()
-
-    # add check for roundup
-    if dt >= arr_dt[x2]:
-        x2 += 1
-
-    if ld >= arr_ld[y2]:
-        y2 += 1
-
-    x1 = x2 - 1
-    y1 = y2 - 1
-
-    # Print status for debug
-    print('TARGET:      D/t = %.1f      L/D = %3f' % (dt, ld))
-    print('UPPER BOUND: D/t = %.1f      L/D = %3f' % (arr_dt[x2], arr_ld[y2]))
-    print('LOWER BOUND: D/t = %.1f      L/D = %3f' % (arr_dt[x1], arr_ld[y1]))
-
-    a_11 = mtrx[y1, x1]
-    a_21 = mtrx[y1, x2]
-    a_12 = mtrx[y2, x1]
-    a_22 = mtrx[y2, x2]
-
-    x = dt
-    y = ld
-
-    fx_y1 = ((x2-x)/(x2-x1))*a_11 + ((x-x1)/(x2-x1))*a_21
-    fx_y2 = ((x2-x)/(x2-x1))*a_12 + ((x-x1)/(x2-x1))*a_22
-
-    print()
-    print('A21 = %.4f   A22 = %.4f' % (a_12, a_22))
-    print('A11 = %.4f   A21 = %.4f' % (a_11, a_21))
-
-    if a_11 == 0 or a_21 == 0:
-        a = a_22
+    # 4.4.1
+    if fic <= 0.55*sy:
+        fs = 2
+    # 4.4.2
+    elif 0.55*sy < fic < sy:
+        fs = 2.407 - 0.741*(fic/sy)
+    # 4.4.3
+    elif fic == sy:
+        fs = 1.667
     else:
-        a = ((y2-y)/(y2-y1))*fx_y1 + ((y-y1)/(y2-y1))*fx_y2
+        print('fs not found, equal 1')
+        fs = 1
 
-    print('A = ', a)
-
-    return a
-
-# Get index
-# help from MATLAB to py https://docs.scipy.org/doc/numpy-dev/user/numpy-for-matlab-users.html
-def getB(arr, val):
-    # Get smallest difference between array and val
-    val_idx = (np.abs(arr[:, 0] - val)).argmin()
-
-    # add check for roundup
-    if val >= arr[val_idx, 0]:
-        val_idx += 1
-
-    # Get points for linear interpolation
-    x1 = arr[val_idx - 1, 0]
-    x2 = arr[val_idx, 0]
-    y1 = arr[val_idx - 1, 1]
-    y2 = arr[val_idx, 1]
-
-    # Calculate approximate b
-    b = (val-x1)*((y2-y1)/(x2-x1))+y1
-
-    return b
+    return fs
 
 # Define all parameters
 D_o = 28                    # diameter
@@ -100,60 +55,17 @@ t_0 = 0.5                 # initial thickness guess
 t_step = 0.05               # step for convergence
 maxit = 100                 # max iterations avoid infinite loop
 
-
 # Calculated initial parameters
+R_o = D_o/2
 S_allow = S_y/SF
 L = np.ceil((SG * d_tether * L_tether) / (np.pi * (2 * D_o + 3 * d_tether)))
 p_req = (2*P)/(D_o * d_tether)
-
-# Create arrays for imported csv data of ASME Div II, Part
-FigG = genfromtxt('csv/IID_FigG.csv', delimiter=',')            # Figure G, to find A
-CS2 = genfromtxt('csv/IID_CS2_300F.csv', delimiter=',')         # CS2 for S_y > 30 ksi, T<=300 def F
-
-# Create array of unique Do/t and L/Do values from FigG table
-FigG_Dt = np.unique(FigG[0:,0])
-
-# Add line due to importing error Nan
-FigG_Dt = FigG_Dt[~np.isnan(FigG_Dt)]
-
-FigG_LD = np.unique(FigG[0:,1])
-
-# Create grid for 3D solution
-X_Dt, Y_LD = np.meshgrid(FigG_Dt, FigG_LD)
-
-# get nums of rows and cols
-cols = FigG_Dt.__len__()
-rows = FigG_LD.__len__()
-
-# Create solution matrix
-FigG_A3D = np.zeros((rows, cols))
-
-# loop for processing csv of A data
-for i in range(rows):
-    for j in range(cols):
-
-        TARGET1 = np.array(np.where((FigG[:, 0] == X_Dt[i, j]) & (FigG[:, 1] == Y_LD[i, j])))
-
-        if not TARGET1:
-            continue
-        else:
-            FigG_A3D[i, j] = FigG[TARGET1[0, 0], 2]
 
 # Initialize loop
 p_a = 0
 t = t_0
 itnum = 1
 
-# Initliaze arrays for summary csv
-it = []
-t_arr = []
-A_arr = []
-B_arr = []
-Dt_arr = []
-LD_arr = []
-pa_arr = []
-
-# Create while loop for iteration criterion
 while p_a < p_req:
 
     # check for first interation, oteherwise add the t_step
@@ -167,40 +79,9 @@ while p_a < p_req:
     Dt = D_o / t
     LD = L / D_o
 
-    # Check for chart applicable aspect ratios
-    if Dt >= 4:
-        # Check for extreme LD cases
-        if LD > 50:
-            LD = 50
-        # else if statement
-        elif LD < 0.05:
-            LD =0.05
-        else:
-            A = getA(FigG_A3D, FigG_Dt, Dt, FigG_LD, LD)
-            # A = 0.0015
+    F_he = (1.6*C_y*E_y*t)/D_o
 
-    else:
-        A = 1.1/ (Dt ** 2)
-
-    # Get nearest value in CS2 table
-    if A <= CS2[-1, 0]:
-        B = getB(CS2, A)
-    else:
-        # use [-1] to get last element of an array
-        B = CS2[-1, 1]
-
-    # for now assume Dot >4
-    # Calculate allowable pressure
-    p_a = (4*B)/(3 * Dt)
-
-    # Add to summary array
-    it.append(itnum)
-    t_arr.append(t)
-    Dt_arr.append(Dt)
-    LD_arr.append(LD)
-    A_arr.append(A)
-    B_arr.append(B)
-    pa_arr.append(p_a)
+    M_x = L/((R_o*t)**0.5)
 
     # Check if current it >= max
     if itnum >= maxit:
@@ -208,6 +89,7 @@ while p_a < p_req:
         print('\n' * 2)
         print('Did not find solution after %i iterations' % itnum)
         break
+
     # check if solution converged, print messages and then it will exit loop
     elif p_a >= p_req:
         print('A thickness of %.3f in will be safe' %t)
@@ -218,35 +100,3 @@ while p_a < p_req:
 
     # multiple blank lines
     print('\n' * 2)
-
-# Do final stuff
-
-plt_bool = 1
-if plt_bool == 1:
-
-    # Plot D/t mass vs L/D vs A Fig G ASME
-    fig = plt.figure(1)
-    ax = fig.gca(projection='3d')
-    surf = ax.plot_surface(X_Dt, Y_LD, FigG_A3D, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-    # Customize the z axis.
-    ax.zaxis.set_major_formatter(FormatStrFormatter('%.0f'))
-    ax.set_xlabel(r'$D_o/t$')
-    ax.set_ylabel(r'$L/D_o$')
-    ax.set_zlabel(r'$A$')
-    plt.title('Visualization of ASME Fig-G')
-    # Add a color bar which maps values to colors.
-    fig.colorbar(surf, shrink=0.5, aspect=5)
-    plt.savefig('fig\FigG_3D.png')
-
-    # Convergence plot
-    plt.figure(2)
-    plt.plot(it, pa_arr)
-    plt.xlabel('Iteration ' + r'$n$')
-    plt.xlim([0, itnum])
-    plt.ylabel('Allowable pressure ' + r'$p_a [psi]$')
-    plt.title('Allowable pressure vs iteration number')
-    plt.savefig('fig/it_vs_pa.png')
-
-# Array export
-Exp_Data = np.asarray([it, t_arr, Dt_arr, LD_arr, A_arr, B_arr, pa_arr])
-np.savetxt('data\it_sum_' + nowtext + '.csv', np.transpose(Exp_Data), delimiter=',')
