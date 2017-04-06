@@ -14,9 +14,8 @@ def findval(arr, val, col):
     val_idx = (np.abs(arr[:, col] - val)).argmin()
 
     # add check for roundup
-    if val >= arr[val_idx,col]:
+    if val >= arr[val_idx, col]:
         val_idx += 1
-
     return val_idx
 
 # 1D interpolation equation
@@ -24,16 +23,16 @@ def interpol(x, x1, x2, y1, y2):
     y = (x-x1)*((y2-y1)/(x2-x1))+y1
     return y
 
-# bilinear interpolation equation
+# bilinear interpolation equation set y_2 = array
 def bi_interpol(A, x, y, x1, x2, y1, y2):
 
-    Q_11 = A[x1, y1]
-    Q_21 = A[x2, y1]
-    Q_12 = A[x1, y2]
-    Q_22 = A[x2, y2]
+    a_11 = A[y1, x1+1]
+    a_21 = A[y2, x1+1]
+    a_12 = A[y1, x2+1]
+    a_22 = A[y2, x2+1]
 
-    fx_y1 = ((x_2-x)/(x_2-x_1))*Q_11 + ((x-x_1)/(x_2-x_1))*Q_21
-    fx_y2 = ((x_2-x)/(x_2-x_1))*Q_12 + ((x-x_1)/(x_2-x_1))*Q_22
+    fx_y1 = ((x_2-x)/(x_2-x_1))*a_11 + ((x-x_1)/(x_2-x_1))*a_21
+    fx_y2 = ((x_2-x)/(x_2-x_1))*a_12 + ((x-x_1)/(x_2-x_1))*a_22
 
     z = ((y2-y)/(y2-y1))*fx_y1 +((y-y1)/(y2-y1))*fx_y2
     return z
@@ -59,6 +58,10 @@ p_req = (2*P)/(D_o * d_tether)
 # Create arrays for imported csv data of ASME Div II, Part
 FigG = genfromtxt('csv/IID_FigG.csv', delimiter=',')            # Figure G, to find A
 CS2 = genfromtxt('csv/IID_CS2_300F.csv', delimiter=',')         # CS2 for S_y > 30 ksi, T<=300 def F
+
+A_calc = FigG[0:,1:2]
+
+uniqueA = set(A_calc)
 
 # Initialize loop
 p_a = 0
