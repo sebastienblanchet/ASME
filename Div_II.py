@@ -96,9 +96,9 @@ E_y = 2.9*10**7             # Youngs modulus 200 [GPa]
 v = 0.3                     # poissons ratio [ul]
 rho = 0.284                 # density of steel [lb/in^3]
 SG = 1.01                   # spool gap 1% [ul]
-t_0 = 1/2                   # initial thickness guess
-t_step = 1/8                # step for convergence
-maxit = 25                  # max iterations avoid infinite loop
+t_0 = 0.875                   # initial thickness guess
+t_step = 0.01               # step for convergence
+maxit = 100                  # max iterations avoid infinite loop
 
 
 # Calculated initial parameters
@@ -241,4 +241,4 @@ if plt_bool == 1:
 
 # Array export
 Exp_Data = np.asarray([it, t_arr, Dt_arr, LD_arr, A_arr, B_arr, pa_arr])
-np.savetxt('data\it_sum' + nowtext + '.csv', np.transpose(Exp_Data), delimiter=',')
+np.savetxt('data\it_sum_' + nowtext + '.csv', np.transpose(Exp_Data), delimiter=',')
