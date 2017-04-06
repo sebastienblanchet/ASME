@@ -3,6 +3,7 @@
 
 
 # Iterative calcultion of thickness as per ASME Sec. VII Div 2
+# Outline in section 4.4.5.1 for cylindrical shells
 
 # Import relevant modules
 import sys
@@ -22,6 +23,40 @@ print(datetime.now().strftime('%Y/%m/%d %H:%M:%S'))
 print()
 
 # Define all functions
+
+# Get Ch as per step 2
+def getCH(mx, dot):
+
+    # 4.4.21
+    if mx >= dot**0.94:
+        ch = 0.55*(dot**-1)
+    # 4.4.22
+    elif 13 < mx < 2*(dot**0.94):
+        ch = 1.12*(mx**-1.058)
+    # 4.4.23
+    elif 1.5 < mx <= 13:
+        ch = 0.92/(mx-0.579)
+    # 4.4.24 (i.e. mx <= 1.5
+    else:
+        ch = 1
+
+    return ch
+
+# Get Fic as per step 3
+def getFIC(feh, sy):
+
+    # 4.4.25
+    if (feh / sy) >= 2.439:
+        fic = sy
+    # 4.4.26
+    elif 0.552 < (feh/sy) < 2.439:
+        fic = 0.7*sy*((feh/sy)**0.4)
+    # 4.4.27 (feh/sy <= 0.552)
+    else:
+        fic = feh
+
+    return fic
+
 # Get FS as per 4.4.2
 def getFS(fic, sy):
 
@@ -52,8 +87,8 @@ v = 0.3                     # poissons ratio [ul]
 rho = 0.284                 # density of steel [lb/in^3]
 SG = 1.01                   # spool gap 1% [ul]
 t_0 = 0.5                 # initial thickness guess
-t_step = 0.05               # step for convergence
-maxit = 100                 # max iterations avoid infinite loop
+t_step = 1/8               # step for convergence
+maxit = 25                 # max iterations avoid infinite loop
 
 # Calculated initial parameters
 R_o = D_o/2
@@ -65,6 +100,12 @@ p_req = (2*P)/(D_o * d_tether)
 p_a = 0
 t = t_0
 itnum = 1
+
+# Initiliaze arrays
+arr_it = []
+arr_t = []
+arr_pa = []
+
 
 while p_a < p_req:
 
@@ -79,9 +120,30 @@ while p_a < p_req:
     Dt = D_o / t
     LD = L / D_o
 
-    F_he = (1.6*C_y*E_y*t)/D_o
-
+    # Shell parameter 4.4.20
     M_x = L/((R_o*t)**0.5)
+
+    # Call function to get Ch parameter
+    C_h = getCH(M_x, Dt)
+
+    # elastic hoop compressive membrane failure 4.4.19
+    F_he = (1.6*C_h*E_y*t)/D_o
+
+    # Step 3 : calculate predicted buckling stress Fic:
+    F_ic = getFIC(F_he, S_y)
+
+    # Step 4 : w/ Fic get the design factor FS
+    FS = getFS(F_ic, S_y)
+
+    # Step 5 calculate allowable pressure p-a
+    # Allowable hoop compressive membrane stress 4.4.29
+    F_ha = F_ic/FS
+    # Allowable pressure 4.4.28
+    p_a = 2*F_ha*(Dt**-1)
+
+    # Add to summary array
+    arr_it.append(itnum)
+    arr_pa.append(p_a)
 
     # Check if current it >= max
     if itnum >= maxit:
@@ -100,3 +162,11 @@ while p_a < p_req:
 
     # multiple blank lines
     print('\n' * 2)
+
+plt.figure(1)
+plt.plot(arr_it, arr_pa)
+plt.xlabel('Iteration ' + r'$n$')
+plt.xlim([0, itnum])
+plt.ylabel('Allowable pressure ' + r'$p_a [psi]$')
+plt.title('Allowable pressure vs iteration number')
+plt.savefig('fig/it_vs_pa.png')
