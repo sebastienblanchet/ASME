@@ -7,35 +7,58 @@ import matplotlib.pyplot as plt
 from numpy import genfromtxt
 
 # Define all functions
-# Get index
-# help from MATLAB to py https://docs.scipy.org/doc/numpy-dev/user/numpy-for-matlab-users.html
-def findval(arr, val, col):
-    # Get smallest difference between array and val
-    val_idx = (np.abs(arr[:, col] - val)).argmin()
-
-    # add check for roundup
-    if val >= arr[val_idx, col]:
-        val_idx += 1
-    return val_idx
-
-# 1D interpolation equation
-def interpol(x, x1, x2, y1, y2):
-    y = (x-x1)*((y2-y1)/(x2-x1))+y1
-    return y
 
 # bilinear interpolation equation set y_2 = array
-def bi_interpol(A, x, y, x1, x2, y1, y2):
+def getA(mtrx, arr_dt, dt, arr_ld, ld):
 
-    a_11 = A[y1, x1+1]
-    a_21 = A[y2, x1+1]
-    a_12 = A[y1, x2+1]
-    a_22 = A[y2, x2+1]
+    x1 = (np.abs(arr_dt - dt)).argmin()
+    y1 = (np.abs(arr_ld - ld)).argmin()
 
-    fx_y1 = ((x_2-x)/(x_2-x_1))*a_11 + ((x-x_1)/(x_2-x_1))*a_21
-    fx_y2 = ((x_2-x)/(x_2-x_1))*a_12 + ((x-x_1)/(x_2-x_1))*a_22
+    # add check for roundup
+    if dt >= arr_dt[x1]:
+        x1 += 1
 
-    z = ((y2-y)/(y2-y1))*fx_y1 +((y-y1)/(y2-y1))*fx_y2
-    return z
+    if ld >= arr_ld[y1]:
+        y1 += 1
+
+    x2 = x1 + 1
+    y2 = y1 + 1
+
+    a_11 = mtrx[y1, x1]
+    a_21 = mtrx[y2, x1]
+    a_12 = mtrx[y1, x2]
+    a_22 = mtrx[y2, x2]
+
+    x = dt
+    y = ld
+
+    fx_y1 = ((x2-x)/(x2-x1))*a_11 + ((x-x1)/(x2-x1))*a_21
+    fx_y2 = ((x2-x)/(x2-x1))*a_12 + ((x-x1)/(x2-x1))*a_22
+
+    a = ((y2-y)/(y2-y1))*fx_y1 +((y-y1)/(y2-y1))*fx_y2
+
+    return a
+
+# Get index
+# help from MATLAB to py https://docs.scipy.org/doc/numpy-dev/user/numpy-for-matlab-users.html
+def getB(arr, val):
+    # Get smallest difference between array and val
+    val_idx = (np.abs(arr[:, 0] - val)).argmin()
+
+    # add check for roundup
+    if val >= arr[val_idx, 0]:
+        val_idx += 1
+
+    # Get points for linear interpolation
+    x1 = arr[val_idx - 1, 0]
+    x2 = arr[val_idx, 0]
+    y1 = arr[val_idx - 1, 1]
+    y2 = arr[val_idx, 1]
+
+    # Calculate approximate b
+    b = (val-x1)*((y2-y1)/(x2-x1))+y1
+
+    return b
 
 # Define all parameters
 D_o = 28                      # diameter
@@ -59,9 +82,36 @@ p_req = (2*P)/(D_o * d_tether)
 FigG = genfromtxt('csv/IID_FigG.csv', delimiter=',')            # Figure G, to find A
 CS2 = genfromtxt('csv/IID_CS2_300F.csv', delimiter=',')         # CS2 for S_y > 30 ksi, T<=300 def F
 
-A_calc = FigG[0:,1:2]
+# Create array of unique Do/t and L/Do values from FigG table
+FigG_Dt = np.unique(FigG[0:,0])
+# Add line due to importing error Nan
+FigG_Dt = FigG_Dt[~np.isnan(FigG_Dt)]
+FigG_LD = np.unique(FigG[0:,1])
 
-uniqueA = set(A_calc)
+# Create grid for 3D solution
+X_Dt, Y_LD = np.meshgrid(FigG_Dt, FigG_LD)
+# get nums of rows and cols
+cols = FigG_Dt.__len__()
+rows = FigG_LD.__len__()
+
+# Create solution matrix
+FigG_A3D = np.zeros((rows, cols))
+
+for i in range(rows):
+    for j in range(cols):
+
+        # status
+        print('For D/t = %.1f and L/D = %.2f' %(X_Dt[i, j], Y_LD[i, j]))
+
+        TARGET1 = np.array(np.where((FigG[:, 0] == X_Dt[i, j]) & (FigG[:, 1] == Y_LD[i, j])))
+
+        if not TARGET1:
+            continue
+        else:
+
+            FigG_A3D[i, j] = FigG[TARGET1[0, 0], 2]
+
+
 
 # Initialize loop
 p_a = 0
@@ -70,56 +120,52 @@ itnum = 1
 maxit = 10
 t_step = 1/8
 
+# Create while loop for iteration criterion
 while p_a < p_req:
 
-    if itnum !=1:
+    # check for first interation, oteherwise add the t_step
+    if itnum != 1:
         t += t_step
 
+    print('Iteration %i for t = %.3f in' % (itnum, t))
+
     # calc D_0/t ratio for first guess
-    Dot = D_o/t
-    LDo = L / D_o
+    Dt = D_o / t
+    LD = L / D_o
 
     # Check for chart applicable aspect ratios
-    if Dot >= 4:
-        # Check for extreme LDo cases
-        if LDo > 50:
-            LDo = 50
+    if Dt >= 4:
+        # Check for extreme LD cases
+        if LD > 50:
+            LD = 50
         # else if statement
-        elif LDo < 0.05:
-            LDo =0.05
+        elif LD < 0.05:
+            LD =0.05
         else:
-
-            # do stuff to find A from (1)
-            # print('Method 1 used for A calc')
-            A = 0.002
+            A = getA(FigG_A3D, FigG_Dt, Dt, FigG_LD,LD)
+            # A = 0.0015
 
     else:
         # print('Method 2 used for A calc')
-        A = 1.1/ (Dot**2)
+        A = 1.1/ (Dt ** 2)
 
     # Get nearest value in CS2 table
-    ib = findval(CS2, A, 0)
-    # print(ib)
-
-    # Interpolate to find B
-    A_i1 = CS2[ib - 1, 0]
-    A_i2 = CS2[ib, 0]
-    B_i1 = CS2[ib - 1, 1]
-    B_i2 = CS2[ib, 1]
-    B = interpol(A, A_i1, A_i2, B_i1, B_i2)
-    # print(B)
+    B = getB(CS2, A)
 
     # for now assume Dot >4
     # Calculate allowable pressure
-    p_a = (4*B)/(3*Dot)
+    p_a = (4*B)/(3 * Dt)
 
     # equivalent to c++'s i++, inc itnum to avoid infinite loop
     itnum += 1
     if itnum >= maxit:
-        print('Did not find solution after %i iterations' %(itnum))
+        print('Did not find solution after %i iterations' %itnum)
         break
+    # check if solution converged, print messages and then it will exit loop
+    elif p_a >= p_req:
+        print('A thickness of %.3f in will be safe' %t)
+        print('pa = %.1f psi >= preq = %.1f psi' %(p_a, p_req))
 
-# print('A thickness of %.3f in will be safe' %(t))
 
 # Array export
 # Q_Exp = np.asarray([x_0, q])
