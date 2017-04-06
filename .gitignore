@@ -6,3 +6,6 @@
 
 #ignore all summary csv files
 it_sum*.csv
+
+#ignore plots
+*.png

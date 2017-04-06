@@ -12,7 +12,7 @@ from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
 # Logging
-#  help as per https://www.cyberciti.biz/faq/howto-get-current-date-time-in-python/
+# help as per https://www.cyberciti.biz/faq/howto-get-current-date-time-in-python/
 nowtext = datetime.now().strftime('%Y_%m_%d_%H%M%S')
 sys.stdout = open('log/' + nowtext + '.txt', 'w')
 print(datetime.now().strftime('%Y/%m/%d %H:%M:%S'))
@@ -96,9 +96,9 @@ E_y = 2.9*10**7             # Youngs modulus 200 [GPa]
 v = 0.3                     # poissons ratio [ul]
 rho = 0.284                 # density of steel [lb/in^3]
 SG = 1.01                   # spool gap 1% [ul]
-t_0 = 0.875                   # initial thickness guess
-t_step = 0.01               # step for convergence
-maxit = 100                  # max iterations avoid infinite loop
+t_0 = 0.5                 # initial thickness guess
+t_step = 0.05               # step for convergence
+maxit = 100                 # max iterations avoid infinite loop
 
 
 # Calculated initial parameters
@@ -221,11 +221,11 @@ while p_a < p_req:
 
 # Do final stuff
 
-plt_bool = 0
+plt_bool = 1
 if plt_bool == 1:
 
     # Plot D/t mass vs L/D vs A Fig G ASME
-    fig = plt.figure()
+    fig = plt.figure(1)
     ax = fig.gca(projection='3d')
     surf = ax.plot_surface(X_Dt, Y_LD, FigG_A3D, cmap=cm.coolwarm, linewidth=0, antialiased=False)
     # Customize the z axis.
@@ -237,7 +237,15 @@ if plt_bool == 1:
     # Add a color bar which maps values to colors.
     fig.colorbar(surf, shrink=0.5, aspect=5)
     plt.savefig('fig\FigG_3D.png')
-    plt.show()
+
+    # Convergence plot
+    plt.figure(2)
+    plt.plot(it, pa_arr)
+    plt.xlabel('Iteration' + r'$n$')
+    plt.xlim([0, itnum])
+    plt.ylabel('Allowable pressure ' + r'$p_a [psi]$')
+    plt.title('Allowable pressure vs iteration number')
+    plt.savefig('fig/it_vs_pa.png')
 
 # Array export
 Exp_Data = np.asarray([it, t_arr, Dt_arr, LD_arr, A_arr, B_arr, pa_arr])
