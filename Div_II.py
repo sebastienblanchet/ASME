@@ -241,7 +241,7 @@ if plt_bool == 1:
     # Convergence plot
     plt.figure(2)
     plt.plot(it, pa_arr)
-    plt.xlabel('Iteration' + r'$n$')
+    plt.xlabel('Iteration ' + r'$n$')
     plt.xlim([0, itnum])
     plt.ylabel('Allowable pressure ' + r'$p_a [psi]$')
     plt.title('Allowable pressure vs iteration number')
