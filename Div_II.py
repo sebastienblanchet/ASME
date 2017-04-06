@@ -20,9 +20,23 @@ def findval(arr, val, col):
     return val_idx
 
 # 1D interpolation equation
-def interpol_xy (x, x1, x2, y1, y2):
+def interpol(x, x1, x2, y1, y2):
     y = (x-x1)*((y2-y1)/(x2-x1))+y1
     return y
+
+# bilinear interpolation equation
+def bi_interpol(A, x, y, x1, x2, y1, y2):
+
+    Q_11 = A[x1, y1]
+    Q_21 = A[x2, y1]
+    Q_12 = A[x1, y2]
+    Q_22 = A[x2, y2]
+
+    fx_y1 = ((x_2-x)/(x_2-x_1))*Q_11 + ((x-x_1)/(x_2-x_1))*Q_21
+    fx_y2 = ((x_2-x)/(x_2-x_1))*Q_12 + ((x-x_1)/(x_2-x_1))*Q_22
+
+    z = ((y2-y)/(y2-y1))*fx_y1 +((y-y1)/(y2-y1))*fx_y2
+    return z
 
 # Define all parameters
 D_o = 28                      # diameter
@@ -73,24 +87,24 @@ while p_a < p_req:
         else:
 
             # do stuff to find A from (1)
-            print('Method 1 used for A calc')
+            # print('Method 1 used for A calc')
             A = 0.002
 
     else:
-        print('Method 2 used for A calc')
+        # print('Method 2 used for A calc')
         A = 1.1/ (Dot**2)
 
     # Get nearest value in CS2 table
     ib = findval(CS2, A, 0)
-    print(ib)
+    # print(ib)
 
     # Interpolate to find B
     A_i1 = CS2[ib - 1, 0]
     A_i2 = CS2[ib, 0]
     B_i1 = CS2[ib - 1, 1]
     B_i2 = CS2[ib, 1]
-    B = interpol_xy(A, A_i1, A_i2, B_i1, B_i2)
-    print(B)
+    B = interpol(A, A_i1, A_i2, B_i1, B_i2)
+    # print(B)
 
     # for now assume Dot >4
     # Calculate allowable pressure
@@ -102,7 +116,7 @@ while p_a < p_req:
         print('Did not find solution after %i iterations' %(itnum))
         break
 
-print('A thickness of %.3f in will be safe' %(t))
+# print('A thickness of %.3f in will be safe' %(t))
 
 # Array export
 # Q_Exp = np.asarray([x_0, q])
