@@ -11,22 +11,25 @@ from numpy import genfromtxt
 # bilinear interpolation equation set y_2 = array
 def getA(mtrx, arr_dt, dt, arr_ld, ld):
 
-    x1 = (np.abs(arr_dt - dt)).argmin()
-    y1 = (np.abs(arr_ld - ld)).argmin()
+    x2 = (np.abs(arr_dt - dt)).argmin()
+    y2 = (np.abs(arr_ld - ld)).argmin()
 
     # add check for roundup
-    if dt >= arr_dt[x1]:
-        x1 += 1
+    if dt >= arr_dt[x2]:
+        x2 += 1
 
-    if ld >= arr_ld[y1]:
-        y1 += 1
+    if ld >= arr_ld[y2]:
+        y2 += 1
 
-    x2 = x1 + 1
-    y2 = y1 + 1
+    print('ACTUAL:      D/t = %.1f and L/D = %3f' % (dt, ld))
+    print('UPPER BOUND: D/t = %.1f and L/D = %3f' % (arr_dt[x2], arr_ld[y2]))
+
+    x1 = x2 - 1
+    y1 = y2 - 1
 
     a_11 = mtrx[y1, x1]
-    a_21 = mtrx[y2, x1]
-    a_12 = mtrx[y1, x2]
+    a_21 = mtrx[y1, x2]
+    a_12 = mtrx[y2, x1]
     a_22 = mtrx[y2, x2]
 
     x = dt
@@ -35,7 +38,15 @@ def getA(mtrx, arr_dt, dt, arr_ld, ld):
     fx_y1 = ((x2-x)/(x2-x1))*a_11 + ((x-x1)/(x2-x1))*a_21
     fx_y2 = ((x2-x)/(x2-x1))*a_12 + ((x-x1)/(x2-x1))*a_22
 
-    a = ((y2-y)/(y2-y1))*fx_y1 +((y-y1)/(y2-y1))*fx_y2
+
+    print('A21 = %.4f   A22 = %.4f' % (a_12, a_22))
+    print('A11 = %.4f   A21 = %.4f' % (a_11, a_21))
+
+    # if a_11 & a_21 & a
+
+    a = ((y2-y)/(y2-y1))*fx_y1 + ((y-y1)/(y2-y1))*fx_y2
+
+    print('A = ', a)
 
     return a
 
@@ -84,12 +95,15 @@ CS2 = genfromtxt('csv/IID_CS2_300F.csv', delimiter=',')         # CS2 for S_y > 
 
 # Create array of unique Do/t and L/Do values from FigG table
 FigG_Dt = np.unique(FigG[0:,0])
+
 # Add line due to importing error Nan
 FigG_Dt = FigG_Dt[~np.isnan(FigG_Dt)]
+
 FigG_LD = np.unique(FigG[0:,1])
 
 # Create grid for 3D solution
 X_Dt, Y_LD = np.meshgrid(FigG_Dt, FigG_LD)
+
 # get nums of rows and cols
 cols = FigG_Dt.__len__()
 rows = FigG_LD.__len__()
@@ -100,24 +114,18 @@ FigG_A3D = np.zeros((rows, cols))
 for i in range(rows):
     for j in range(cols):
 
-        # status
-        print('For D/t = %.1f and L/D = %.2f' %(X_Dt[i, j], Y_LD[i, j]))
-
         TARGET1 = np.array(np.where((FigG[:, 0] == X_Dt[i, j]) & (FigG[:, 1] == Y_LD[i, j])))
 
         if not TARGET1:
             continue
         else:
-
             FigG_A3D[i, j] = FigG[TARGET1[0, 0], 2]
-
-
 
 # Initialize loop
 p_a = 0
 t = t_0
 itnum = 1
-maxit = 10
+maxit = 25
 t_step = 1/8
 
 # Create while loop for iteration criterion
@@ -128,6 +136,7 @@ while p_a < p_req:
         t += t_step
 
     print('Iteration %i for t = %.3f in' % (itnum, t))
+    print('pa = %.1f psi <= preq = %.1f psi' % (p_a, p_req))
 
     # calc D_0/t ratio for first guess
     Dt = D_o / t
@@ -142,15 +151,17 @@ while p_a < p_req:
         elif LD < 0.05:
             LD =0.05
         else:
-            A = getA(FigG_A3D, FigG_Dt, Dt, FigG_LD,LD)
+            A = getA(FigG_A3D, FigG_Dt, Dt, FigG_LD, LD)
             # A = 0.0015
 
     else:
-        # print('Method 2 used for A calc')
         A = 1.1/ (Dt ** 2)
 
     # Get nearest value in CS2 table
-    B = getB(CS2, A)
+    if A <= CS2[-1, 0]:
+        B = getB(CS2, A)
+    else:
+        B = CS2[-1, 1]
 
     # for now assume Dot >4
     # Calculate allowable pressure
@@ -159,6 +170,7 @@ while p_a < p_req:
     # equivalent to c++'s i++, inc itnum to avoid infinite loop
     itnum += 1
     if itnum >= maxit:
+        print()
         print('Did not find solution after %i iterations' %itnum)
         break
     # check if solution converged, print messages and then it will exit loop
@@ -166,7 +178,7 @@ while p_a < p_req:
         print('A thickness of %.3f in will be safe' %t)
         print('pa = %.1f psi >= preq = %.1f psi' %(p_a, p_req))
 
-
-# Array export
+    print()
+        # Array export
 # Q_Exp = np.asarray([x_0, q])
 # np.savetxt('Data\DistLoadCap.csv', np.transpose(Q_Exp), delimiter=",")
