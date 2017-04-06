@@ -12,6 +12,7 @@ from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
 # Logging
+#  help as per https://www.cyberciti.biz/faq/howto-get-current-date-time-in-python/
 nowtext = datetime.now().strftime('%Y_%m_%d_%H%M%S')
 sys.stdout = open('log/' + nowtext + '.txt', 'w')
 print(datetime.now().strftime('%Y/%m/%d %H:%M:%S'))
@@ -54,7 +55,10 @@ def getA( mtrx, arr_dt, dt, arr_ld, ld):
     print('A21 = %.4f   A22 = %.4f' % (a_12, a_22))
     print('A11 = %.4f   A21 = %.4f' % (a_11, a_21))
 
-    a = ((y2-y)/(y2-y1))*fx_y1 + ((y-y1)/(y2-y1))*fx_y2
+    if a_11 == 0 or a_21 == 0:
+        a = a_22
+    else:
+        a = ((y2-y)/(y2-y1))*fx_y1 + ((y-y1)/(y2-y1))*fx_y2
 
     print('A = ', a)
 
@@ -94,7 +98,7 @@ rho = 0.284                 # density of steel [lb/in^3]
 SG = 1.01                   # spool gap 1% [ul]
 t_0 = 1/2                   # initial thickness guess
 t_step = 1/8                # step for convergence
-maxit = 5                  # max iterations avoid infinite loop
+maxit = 25                  # max iterations avoid infinite loop
 
 
 # Calculated initial parameters
@@ -216,8 +220,9 @@ while p_a < p_req:
     print('\n' * 2)
 
 # Do final stuff
-doback = 0
-if doback == 1:
+
+plt_bool = 0
+if plt_bool == 1:
 
     # Plot D/t mass vs L/D vs A Fig G ASME
     fig = plt.figure()
@@ -234,6 +239,6 @@ if doback == 1:
     plt.savefig('fig\FigG_3D.png')
     plt.show()
 
-    # Array export
-    Exp_Data = np.asarray([it, t_arr, Dt_arr, LD_arr, A_arr, B_arr, pa_arr])
-    np.savetxt('data\it_sum.csv', np.transpose(Exp_Data), delimiter=',')
+# Array export
+Exp_Data = np.asarray([it, t_arr, Dt_arr, LD_arr, A_arr, B_arr, pa_arr])
+np.savetxt('data\it_sum' + nowtext + '.csv', np.transpose(Exp_Data), delimiter=',')
