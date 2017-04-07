@@ -97,8 +97,8 @@ v = 0.3                     # poissons ratio [ul]
 rho = 0.284                 # density of steel [lb/in^3]
 SG = 1.01                   # spool gap 1% [ul]
 t_0 = 0.5                 # initial thickness guess
-t_step = 0.05               # step for convergence
-maxit = 100                 # max iterations avoid infinite loop
+t_step = 0.01               # step for convergence
+maxit = 200                 # max iterations avoid infinite loop
 
 
 # Calculated initial parameters

@@ -10,10 +10,10 @@ import sys
 from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
-from numpy import genfromtxt
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
+# from numpy import genfromtxt
+# from mpl_toolkits.mplot3d import Axes3D
+# from matplotlib import cm
+# from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
 # Logging
 # help as per https://www.cyberciti.biz/faq/howto-get-current-date-time-in-python/
@@ -28,17 +28,21 @@ print()
 def getCH(mx, dot):
 
     # 4.4.21
-    if mx >= dot**0.94:
+    if mx >= 2*(dot**0.94):
         ch = 0.55*(dot**-1)
+        print('Equation 4.4.21, Mx = %.1f , Ch =%.1f' %(mx, ch))
     # 4.4.22
     elif 13 < mx < 2*(dot**0.94):
         ch = 1.12*(mx**-1.058)
+        print('Equation 4.4.22, Mx = %.1f , Ch =%.1f' % (mx, ch))
     # 4.4.23
     elif 1.5 < mx <= 13:
         ch = 0.92/(mx-0.579)
-    # 4.4.24 (i.e. mx <= 1.5
+        print('Equation 4.4.23, Mx = %.1f , Ch =%.1f' % (mx, ch))
+    # 4.4.24 (i.e. mx <= 1.5)
     else:
         ch = 1
+        print('Equation 4.4.24, Mx = %.1f , Ch =%.1f' % (mx, ch))
 
     return ch
 
@@ -48,11 +52,14 @@ def getFIC(feh, sy):
     # 4.4.25
     if (feh / sy) >= 2.439:
         fic = sy
+        print('Equation 4.4.25, Feh = %.1f , Sy =%.1f' % (feh, sy))
     # 4.4.26
-    elif 0.552 < (feh/sy) < 2.439:
+    elif 0.552 < feh/sy < 2.439:
         fic = 0.7*sy*((feh/sy)**0.4)
+        print('Equation 4.4.26, Feh = %.1f , Sy =%.1f' % (feh, sy))
     # 4.4.27 (feh/sy <= 0.552)
     else:
+        print('Equation 4.4.27, Feh = %.1f , Sy =%.1f' % (feh, sy))
         fic = feh
 
     return fic
@@ -63,12 +70,15 @@ def getFS(fic, sy):
     # 4.4.1
     if fic <= 0.55*sy:
         fs = 2
+        print('Equation 4.4.1, FS = %.1f , Fic =%.1f' % (fs, fic))
     # 4.4.2
     elif 0.55*sy < fic < sy:
         fs = 2.407 - 0.741*(fic/sy)
+        print('Equation 4.4.2, FS = %.1f , Fic =%.1f' % (fs, fic))
     # 4.4.3
     elif fic == sy:
         fs = 1.667
+        print('Equation 4.4.3, FS = %.1f , Fic =%.1f' % (fs, fic))
     else:
         print('fs not found, equal 1')
         fs = 1
@@ -87,8 +97,8 @@ v = 0.3                     # poissons ratio [ul]
 rho = 0.284                 # density of steel [lb/in^3]
 SG = 1.01                   # spool gap 1% [ul]
 t_0 = 0.5                 # initial thickness guess
-t_step = 1/8               # step for convergence
-maxit = 25                 # max iterations avoid infinite loop
+t_step = 0.01               # step for convergence
+maxit = 100                 # max iterations avoid infinite loop
 
 # Calculated initial parameters
 R_o = D_o/2
@@ -106,15 +116,15 @@ arr_it = []
 arr_t = []
 arr_pa = []
 
-
 while p_a < p_req:
 
-    # check for first interation, oteherwise add the t_step
+    # check for first iteration, otherwise add the t_step
     if itnum != 1:
         t += t_step
 
-    print('Iteration %i for t = %.3f in' % (itnum, t))
-    print('pa = %.1f psi <= preq = %.1f psi' % (p_a, p_req))
+    # Display current iteration values
+    print('Iteration %i :' % itnum)
+    print('t = %.3f in' % t)
 
     # calc D_0/t ratio for first guess
     Dt = D_o / t
@@ -145,6 +155,9 @@ while p_a < p_req:
     arr_it.append(itnum)
     arr_pa.append(p_a)
 
+    if p_a < p_req:
+        print('pa = %.1f psi < preq = %.1f psi' % (p_a, p_req))
+
     # Check if current it >= max
     if itnum >= maxit:
         # multiple blank lines
@@ -154,8 +167,8 @@ while p_a < p_req:
 
     # check if solution converged, print messages and then it will exit loop
     elif p_a >= p_req:
-        print('A thickness of %.3f in will be safe' %t)
-        print('pa = %.1f psi >= preq = %.1f psi' %(p_a, p_req))
+        print('pa = %.1f psi >= preq = %.1f psi' % (p_a, p_req))
+        print('A thickness of %.3f in will be safe' % t)
 
     # equivalent to c++'s i++, inc itnum to avoid infinite loop
     itnum += 1
