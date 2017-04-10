@@ -61,7 +61,6 @@ def getNCYL(er):
     return ncyl
 
 
-
 # Define all parameters
 D_o = 28*25.4                    # diameter
 d_tether = 15.2        # tether diameter 15.2mm
@@ -72,8 +71,8 @@ S_y = 241.3                 # Yield strength 35 ksi to [MPa]
 E_y = 200000            # Youngs modulus 200 [GPa]
 v = 0.3                     # poissons ratio [ul]
 SG = 1.01                   # spool gap 1% [ul]
-t_0 = 12.7                 # initial thickness guess
-t_step = 0.1               # step for convergence
+t_0 = 12.7                 # initial thickness guess 0.5 in
+t_step = 0.254               # step for convergence (10 thou in)
 maxit = 200                 # max iterations avoid infinite loop
 
 # Define EN-13445-3 specific properties
@@ -110,7 +109,7 @@ while p_a < p_req:
 
     # Display current iteration values
     print('Iteration %i :' % itnum)
-    print('t = %.1f mm' % e_a)
+    print('t = %.2f mm' % e_a)
 
     # Calculate the average circumeferential pressure in the cylinder p_y
     # 8.5.2.4
@@ -146,6 +145,8 @@ while p_a < p_req:
     else:
         p_r_y = getPRY(pm_pr, p_m_y)
 
+    print('Ratio pm/py = %.3f results in pr/py = %.3f ' %(p_m_y, p_r_y))
+
     # Calculate p_r
     p_r = p_r_y*p_y
 
@@ -156,7 +157,7 @@ while p_a < p_req:
     arr_pa.append(p_a)
 
     if p_a < p_req:
-        print('pa = %.1f MPa < preq = %.1f MPa' % (p_a, p_req))
+        print('pa = %.3f MPa < preq = %.3f MPa' % (p_a, p_req))
 
     # Check if current it >= max
     if itnum >= maxit:
@@ -167,8 +168,8 @@ while p_a < p_req:
 
     # check if solution converged, print messages and then it will exit loop
     elif p_a >= p_req:
-        print('pa = %.1f MPa >= preq = %.1f MPa' % (p_a, p_req))
-        print('A thickness of %.3f in will be safe' % t)
+        print('pa = %.3f MPa >= preq = %.3f MPa' % (p_a, p_req))
+        print('A thickness of %.2f in will be safe' % e_a)
 
     # equivalent to c++'s i++, inc itnum to avoid infinite loop
     itnum += 1
@@ -180,7 +181,7 @@ plt.figure(1)
 plt.plot(arr_it, arr_pa)
 plt.xlabel('Iteration ' + r'$n$')
 plt.xlim([0, itnum])
-plt.ylabel('Allowable pressure ' + r'$p_a [psi]$')
+plt.ylabel('Allowable pressure ' + r'$p_a [MPa]$')
 plt.title('Allowable pressure vs iteration number')
 plt.savefig('fig/it_vs_pa.png')
 
