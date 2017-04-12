@@ -12,7 +12,6 @@ from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
 # Logging
-# help as per https://www.cyberciti.biz/faq/howto-get-current-date-time-in-python/
 nowtext = datetime.now().strftime('%Y_%m_%d_%H%M%S')
 sys.stdout = open('log/' + nowtext + '.txt', 'w')
 print(datetime.now().strftime('%Y/%m/%d %H:%M:%S'))
@@ -34,11 +33,6 @@ def getA( mtrx, arr_dt, dt, arr_ld, ld):
 
     x1 = x2 - 1
     y1 = y2 - 1
-
-    # Print status for debug
-    print('TARGET:      D/t = %.1f      L/D = %3f' % (dt, ld))
-    print('UPPER BOUND: D/t = %.1f      L/D = %3f' % (arr_dt[x2], arr_ld[y2]))
-    print('LOWER BOUND: D/t = %.1f      L/D = %3f' % (arr_dt[x1], arr_ld[y1]))
 
     a_11 = mtrx[y1, x1]
     a_21 = mtrx[y1, x2]
@@ -65,7 +59,6 @@ def getA( mtrx, arr_dt, dt, arr_ld, ld):
     return a
 
 # Get index
-# help from MATLAB to py https://docs.scipy.org/doc/numpy-dev/user/numpy-for-matlab-users.html
 def getB(arr, val):
     # Get smallest difference between array and val
     val_idx = (np.abs(arr[:, 0] - val)).argmin()
@@ -96,22 +89,25 @@ E_y = 2.9*10**7             # Youngs modulus 200 [GPa]
 v = 0.3                     # poissons ratio [ul]
 rho = 0.284                 # density of steel [lb/in^3]
 SG = 1.01                   # spool gap 1% [ul]
-t_0 = 0.5                 # initial thickness guess
-t_step = 0.01               # step for convergence
-maxit = 200                 # max iterations avoid infinite loop
+t_0 = 1.5                		# initial thickness guess
+t_step = 0.001              # step for convergence
+maxit = 250                 # max iterations avoid infinite loop
 
 
 # Calculated initial parameters
 S_allow = S_y/SF
-L = np.ceil((SG * d_tether * L_tether) / (np.pi * (2 * D_o + 3 * d_tether)))
+L = np.ceil((SG * d_tether * L_tether) / (np.pi * \
+                                          (2 * D_o + 3 * d_tether)))
 p_req = (2*P)/(D_o * d_tether)
 
 # Create arrays for imported csv data of ASME Div II, Part
-FigG = genfromtxt('csv/IID_FigG.csv', delimiter=',')            # Figure G, to find A
-CS2 = genfromtxt('csv/IID_CS2_300F.csv', delimiter=',')         # CS2 for S_y > 30 ksi, T<=300 def F
+# Figure G, to find A
+FigG = genfromtxt('csv/IID_FigG.csv', delimiter=',')
+# CS2 for S_y > 30 ksi, T<=300 def F
+CS2 = genfromtxt('csv/IID_CS2_300F.csv', delimiter=',')
 
 # Create array of unique Do/t and L/Do values from FigG table
-FigG_Dt = np.unique(FigG[0:,0])
+FigG_Dt = np.unique(FigG[0:, 0])
 
 # Add line due to importing error Nan
 FigG_Dt = FigG_Dt[~np.isnan(FigG_Dt)]
@@ -132,7 +128,8 @@ FigG_A3D = np.zeros((rows, cols))
 for i in range(rows):
     for j in range(cols):
 
-        TARGET1 = np.array(np.where((FigG[:, 0] == X_Dt[i, j]) & (FigG[:, 1] == Y_LD[i, j])))
+        TARGET1 = np.array(np.where((FigG[:, 0] == \
+                X_Dt[i, j]) & (FigG[:, 1] == Y_LD[i, j])))
 
         if not TARGET1:
             continue
@@ -208,7 +205,7 @@ while p_a < p_req:
         print('\n' * 2)
         print('Did not find solution after %i iterations' % itnum)
         break
-    # check if solution converged, print messages and then it will exit loop
+    # check if solution converged, prints message
     elif p_a >= p_req:
         print('A thickness of %.3f in will be safe' %t)
         print('pa = %.1f psi >= preq = %.1f psi' %(p_a, p_req))
@@ -227,7 +224,8 @@ if plt_bool == 1:
     # Plot D/t mass vs L/D vs A Fig G ASME
     fig = plt.figure(1)
     ax = fig.gca(projection='3d')
-    surf = ax.plot_surface(X_Dt, Y_LD, FigG_A3D, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+    surf = ax.plot_surface(X_Dt, Y_LD, FigG_A3D, cmap=cm.coolwarm,\
+                           linewidth=0, antialiased=False)
     # Customize the z axis.
     ax.zaxis.set_major_formatter(FormatStrFormatter('%.0f'))
     ax.set_xlabel(r'$D_o/t$')
@@ -249,4 +247,5 @@ if plt_bool == 1:
 
 # Array export
 Exp_Data = np.asarray([it, t_arr, Dt_arr, LD_arr, A_arr, B_arr, pa_arr])
-np.savetxt('data\it_sum_' + nowtext + '.csv', np.transpose(Exp_Data), delimiter=',')
+np.savetxt('data\it_sum_' + nowtext + '.csv', \
+           np.transpose(Exp_Data), delimiter=',')

@@ -103,7 +103,8 @@ maxit = 100                 # max iterations avoid infinite loop
 # Calculated initial parameters
 R_o = D_o/2
 S_allow = S_y/SF
-L = np.ceil((SG * d_tether * L_tether) / (np.pi * (2 * D_o + 3 * d_tether)))
+L = np.ceil((SG * d_tether * L_tether) / (np.pi * \
+                            (2 * D_o + 3 * d_tether)))
 p_req = (2*P)/(D_o * d_tether)
 
 # Initialize loop
@@ -165,7 +166,8 @@ while p_a < p_req:
         print('Did not find solution after %i iterations' % itnum)
         break
 
-    # check if solution converged, print messages and then it will exit loop
+    # check if solution converged, print messages
+    # and then it will exit loop
     elif p_a >= p_req:
         print('pa = %.1f psi >= preq = %.1f psi' % (p_a, p_req))
         print('A thickness of %.3f in will be safe' % t)
