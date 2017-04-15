@@ -75,6 +75,6 @@ axarr[2].plot(x, Q_x)
 axarr[2].set_ylabel(r'$Q(x)\ [lbs]$')
 axarr[2].set_xlabel(r'$x\ [in]$')
 axarr[2].set_xlim([0, l/4])
-# Save fige and show
+# Save fig and show
 plt.savefig('Figures\wMQ_vs_x.png')
 plt.show()
