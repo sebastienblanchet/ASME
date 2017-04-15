@@ -46,47 +46,61 @@ l_ws = SG*d_tether
 # mu_step = 0.05
 # mu = np.arange(mu_low, mu_high + mu_step, mu_step)
 mu = [0.05, 0.1, 0.25, 0.3, 0.4, 0.5]
-theta = np.arange(0.01, (10*2*np.pi), 0.01)
+theta = np.arange(0.01, (15*2*np.pi), 0.01)
 N = np.zeros((len(theta), len(mu)))
+p = np.zeros((len(theta), len(mu)))
 A = d_tether*R*theta
 x = l_ws * (theta/(2*np.pi))
 
 for i in range(0, len(theta)):
     for j in range(0, len(mu)):
         N[i, j] = (P/mu[j])*(1-np.exp(-mu[j]*theta[i]))
-
+        p[i, j] = N[i, j] / A[i]
 
 plt.close('all')
 # Plot of N(mu) vs theta
-f, axarr = plt.subplots(2)
+f, axarr = plt.subplots(1)
 # Plot for each mu
 for k in range(0, len(mu)):
-    axarr[0].plot(theta, N[:, k], label=(r'$\mu=$' + ('%0.2f' % mu[k])))
-axarr[0].set_title('Capstan Equation: Stored Normal Force')
-axarr[0].set_xlabel(r'$\theta$ [radians]')
-axarr[0].set_xlim(0, max(theta))
-axarr[0].set_ylabel(r'Normal Force $N$ [lbs]')
-k = 0
-for k in range(0, len(mu)):
-    axarr[1].plot(x, N[:, k], label=(r'$\mu=$' + ('%0.2f' % mu[k])))
-axarr[1].set_xlabel(r'Distance $x$ from load [in]')
-axarr[1].set_ylabel(r'Normal Force $N$ [lbs]')
-axarr[1].set_xlim(0, max(x))
-plt.savefig('Figures\ ' + nowtext + '_nvar.png')
-plt.tight_layout()
-plt.show()
+    axarr.plot(theta, N[:, k], label=(r'$\mu=$' + ('%0.2f' % mu[k])))
+axarr.set_title('Capstan Equation: Normal Force')
+axarr.set_xlabel(r'Contact Angle $\theta$ [radians]')
+axarr.set_xlim(0, max(theta))
+axarr.legend()
+axarr.set_ylabel(r'Normal Force $N$ [lbs]')
+plt.savefig('Figures/nvar/' + nowtext + '.png')
 
+
+# For 2 subplots
+# for k in range(0, len(mu)):
+#     axarr[0].plot(theta, N[:, k], label=(r'$\mu=$' + ('%0.2f' % mu[k])))
+# axarr[0].set_title('Capstan Equation: Normal Force')
+# axarr[0].set_xlabel(r'Contact Angle $\theta$ [radians]')
+# axarr[0].set_xlim(0, max(theta))
+# axarr[0].legend()
+# axarr[0].set_ylabel(r'Normal Force $N$ [lbs]')
+# axarr[0].ticklabel_format(style='sci', axis='y', scilimits=(0, 5))
+# k = 0
+# for k in range(0, len(mu)):
+#     axarr[1].plot(x, N[:, k], label=(r'$\mu=$' + ('%0.2f' % mu[k])))
+# axarr[1].set_xlabel(r'Distance from Applied Load $x$ [in]')
+# axarr[1].set_ylabel(r'Normal Force $N$ [lbs]')
+# axarr[1].set_xlim(0, max(x))
+# axarr[1].ticklabel_format(style='sci', axis='y', scilimits=(0, 5))
+# plt.savefig('Figures\ ' + nowtext + '_nvar.png')
+# plt.tight_layout()
+# plt.show()
 
 plt.figure(2)
 for h in range(0, len(mu)):
-    plt.plot(theta, N[:, h]/A, label=(r'$\mu=$' + ('%0.2f' % mu[h])))
+    plt.plot(theta, p[:, h], label=(r'$\mu=$' + ('%0.2f' % mu[h])))
 plt.legend()
-plt.title('Capstan Equation, First revolution')
-plt.xlabel(r'$\theta$ [radians]')
+plt.title('Capstan Equation: Pressure ')
+plt.xlabel(r'Contact Angle $\theta$ [radians]')
 plt.xlim(0, max(theta))
 plt.ylabel(r'Pressure $p$ [psi]')
-plt.savefig('Figures\ ' + nowtext + '_pvar.png')
-plt.show()
+plt.savefig('Figures\pvar\ ' + nowtext + '.png')
+# plt.show()
 
 # Array export
 # Q_Exp = np.asarray([x_0, q])
