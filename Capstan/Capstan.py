@@ -46,7 +46,7 @@ l_ws = SG*d_tether
 # mu_step = 0.05
 # mu = np.arange(mu_low, mu_high + mu_step, mu_step)
 mu = [0.05, 0.1, 0.25, 0.3, 0.4, 0.5]
-theta = np.arange(0.01, (15*2*np.pi), 0.01)
+theta = np.linspace(0.0001, (25*(2*np.pi)), 1000)
 N = np.zeros((len(theta), len(mu)))
 p = np.zeros((len(theta), len(mu)))
 A = d_tether*R*theta
@@ -70,27 +70,6 @@ axarr.legend()
 axarr.set_ylabel(r'Normal Force $N$ [lbs]')
 plt.savefig('Figures/nvar/' + nowtext + '.png')
 
-
-# For 2 subplots
-# for k in range(0, len(mu)):
-#     axarr[0].plot(theta, N[:, k], label=(r'$\mu=$' + ('%0.2f' % mu[k])))
-# axarr[0].set_title('Capstan Equation: Normal Force')
-# axarr[0].set_xlabel(r'Contact Angle $\theta$ [radians]')
-# axarr[0].set_xlim(0, max(theta))
-# axarr[0].legend()
-# axarr[0].set_ylabel(r'Normal Force $N$ [lbs]')
-# axarr[0].ticklabel_format(style='sci', axis='y', scilimits=(0, 5))
-# k = 0
-# for k in range(0, len(mu)):
-#     axarr[1].plot(x, N[:, k], label=(r'$\mu=$' + ('%0.2f' % mu[k])))
-# axarr[1].set_xlabel(r'Distance from Applied Load $x$ [in]')
-# axarr[1].set_ylabel(r'Normal Force $N$ [lbs]')
-# axarr[1].set_xlim(0, max(x))
-# axarr[1].ticklabel_format(style='sci', axis='y', scilimits=(0, 5))
-# plt.savefig('Figures\ ' + nowtext + '_nvar.png')
-# plt.tight_layout()
-# plt.show()
-
 plt.figure(2)
 for h in range(0, len(mu)):
     plt.plot(theta, p[:, h], label=(r'$\mu=$' + ('%0.2f' % mu[h])))
@@ -100,8 +79,19 @@ plt.xlabel(r'Contact Angle $\theta$ [radians]')
 plt.xlim(0, max(theta))
 plt.ylabel(r'Pressure $p$ [psi]')
 plt.savefig('Figures\pvar\ ' + nowtext + '.png')
-# plt.show()
 
-# Array export
-# Q_Exp = np.asarray([x_0, q])
-# np.savetxt('Data\DistLoadCap.csv', np.transpose(Q_Exp), delimiter=",")
+# Array export for ANSYS
+x_exp = np.zeros((10, 1))
+p_exp = np.zeros((10, 1))
+i = 0
+
+for i in range(0, 10):
+    j_eq = 0
+
+    if i != 0:
+        j_eq = (i*100)-1
+
+    x_exp[i] = x[j_eq]
+    p_exp[i] = p[j_eq, 1]
+
+np.savetxt('Data\pvar.csv', ((l/2)-x_exp, p_exp), delimiter=",")
