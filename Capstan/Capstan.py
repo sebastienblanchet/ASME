@@ -9,7 +9,6 @@ import numpy as np
 from datetime import datetime
 import sys
 
-
 # Runtime
 nowtext = datetime.now().strftime('%Y_%m_%d_%H%M')
 print(datetime.now().strftime('%Y/%m/%d %H:%M:%S'))
@@ -41,10 +40,6 @@ l = np.ceil(SG*n_wraps*d_tether)
 l_ws = SG*d_tether
 
 # Intialize vectors for visual
-# mu_low = 0.05
-# mu_high = 0.4
-# mu_step = 0.05
-# mu = np.arange(mu_low, mu_high + mu_step, mu_step)
 mu = [0.05, 0.1, 0.25, 0.3, 0.4, 0.5]
 theta = np.linspace(0.0001, (25*(2*np.pi)), 1000)
 N = np.zeros((len(theta), len(mu)))
@@ -85,6 +80,8 @@ x_exp = np.zeros((10, 1))
 p_exp = np.zeros((10, 1))
 i = 0
 
+print(x[::100])
+# Create get eve
 for i in range(0, 10):
     j_eq = 0
 
