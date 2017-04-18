@@ -46,6 +46,7 @@ N = np.zeros((len(theta), len(mu)))
 p = np.zeros((len(theta), len(mu)))
 A = d_tether*R*theta
 x = l_ws * (theta/(2*np.pi))
+p_max = (2*P)/(d_tether*D)
 
 for i in range(0, len(theta)):
     for j in range(0, len(mu)):
@@ -76,19 +77,17 @@ plt.ylabel(r'Pressure $p$ [psi]')
 plt.savefig('Figures\pvar\ ' + nowtext + '.png')
 
 # Array export for ANSYS
-x_exp = np.zeros((10, 1))
-p_exp = np.zeros((10, 1))
-i = 0
+ANSYS = np.zeros((12, len(mu)+1))
 
-print(x[::100])
-# Create get eve
-for i in range(0, 10):
-    j_eq = 0
+# First col to display x
+ANSYS[2::, 0] = x[::100]
 
-    if i != 0:
-        j_eq = (i*100)-1
+j = 0
+# For each 100 x, get pressure for respective mu
+for j in range(0, len(mu)):
+    ANSYS[0, j+1] = mu[j]
+    ANSYS[1, j + 1] = p_max
+    ANSYS[2::, j+1] = p[::100, j]
 
-    x_exp[i] = x[j_eq]
-    p_exp[i] = p[j_eq, 1]
-
-np.savetxt('Data\pvar.csv', ((l/2)-x_exp, p_exp), delimiter=",")
+# Export to csv with todays date
+np.savetxt('Data\ ' + nowtext + '_pvar.csv', ANSYS, delimiter=",")
